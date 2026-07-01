@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>雪原射击小游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #gameBox {
+            position: relative;
+            width: 1707px;
+            height: 960px;
+            overflow: hidden;
+        }
+        .bg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .btn-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 150px;
+            height: 70px;
+            cursor: pointer;
+        }
+        .ui-kill {
+            position: absolute;
+            top: 90px;
+            left: 180px;
+            width: 200px;
+            height: 65px;
+        }
+        .ui-score {
+            position: absolute;
+            top: 90px;
+            left: 45%;
+            width: 200px;
+            height: 65px;
+        }
+        .num-kill, .num-score {
+            position: absolute;
+            top: 98px;
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .num-kill { left: 300px; }
+        .num-score { left: 53%; }
+        .role-head {
+            position: absolute;
+            top:10px;
+            right: 40px;
+            width: 200px;
+            height: 180px;
+        }
+        .hp-bar-bg {
+            position: absolute;
+            top: 90px;
+            right: 171px;
+            width: 320px;
+            height: 22px;
+        }
+        .hp-bar-fill {
+            position: absolute;
+            top: 90px;
+            right: 170px;
+            width: 320px;
+            height: 22px;
+            background: #ffd033;
+        }
+        .hp-text {
+            position: absolute;
+            top: 80px;
+            right: 500px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .player {
+            position: absolute;
+            left: 40px;
+            bottom: 220px;
+            width: 110px;
+            height: 160px;
+            z-index: 2;
+        }
+        .bullet {
+            position: absolute;
+            width: 140px;
+            height: 32px;
+            z-index: 1;
+        }
+        .monster {
+            position: absolute;
+            z-index: 1;
+        }
+        .m1 { width: 160px; height: 130px; }
+        .m2 { width: 140px; height: 110px; }
+        .control-box {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 220px;
+        }
+        .dir-btn {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            cursor: pointer;
+        }
+        .btn-up { left: 130px; top: 0; }
+        .btn-left { left: 20px; top: 100px; }
+        .btn-down { left: 130px; top: 100px; }
+        .btn-right { left: 240px; top: 100px; }
+        .btn-attack {
+            position: absolute;
+            right: 40px;
+            bottom: 20px;
+            width: 140px;
+            height: 140px;
+            cursor: pointer;
+        }
+        #startMask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 48px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameBox">
+        <!-- 背景路径已改为 游戏/ -->
+        <img src="游戏/背景.png" class="bg" alt="雪原背景">
+        <img src="游戏/返回.png" class="btn-back" alt="返回">
+
+        <img src="游戏/击怪.png" class="ui-kill" alt="击怪面板">
+        <span class="num-kill" id="killNum">0</span>
+        <img src="游戏/得分.png" class="ui-score" alt="得分面板">
+        <span class="num-score" id="scoreNum">0</span>
+
+        <img src="游戏/血条底部.png" class="hp-bar-bg" alt="血条底色">
+        <div class="hp-bar-fill" id="hpFill"></div>
+        <img src="游戏/头像1.png" class="role-head" alt="洛缇安头像">
+        <span class="hp-text" id="hpNum">100</span>
+
+        <img src="游戏/人物1.png" class="player" id="player" alt="洛缇安">
+
+        <div class="control-box">
+            <img src="游戏/上.png" class="dir-btn btn-up" id="btnUp" alt="上">
+            <img src="游戏/左.png" class="dir-btn btn-left" id="btnLeft" alt="左">
+            <img src="游戏/下.png" class="dir-btn btn-down" id="btnDown" alt="下">
+            <img src="游戏/右.png" class="dir-btn btn-right" id="btnRight" alt="右">
+            <img src="游戏/攻击.png" class="btn-attack" id="btnAtk" alt="攻击">
+        </div>
+
+        <div id="startMask">点击画面任意位置开始游戏</div>
+    </div>
+
+    <script>
+        const game = {
+            running: false,
+            hp: 100,
+            score: 0,
+            killCount: 0,
+            playerX: 40,
+            playerY: 220,
+            playerSpeed: 8,
+            bulletArr: [],
+            monsterArr: [],
+            monsterTimer: null,
+            frameTimer: null,
+            snowBottomLine: 220,    // 雪地底线，不能低于此
+            topBuildingLine: 180    // 顶部建筑围栏高度，怪物顶部不能超过
+        }
+        const gameBox = document.getElementById('gameBox');
+        const player = document.getElementById('player');
+        const hpFill = document.getElementById('hpFill');
+        const hpNum = document.getElementById('hpNum');
+        const scoreNum = document.getElementById('scoreNum');
+        const killNum = document.getElementById('killNum');
+        const startMask = document.getElementById('startMask');
+        const btnUp = document.getElementById('btnUp');
+        const btnDown = document.getElementById('btnDown');
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnAtk = document.getElementById('btnAtk');
+
+        startMask.addEventListener('click', () => {
+            startMask.style.display = 'none';
+            game.running = true;
+            startGameLoop();
+        })
+
+        let moveDir = { up:false, down:false, left:false, right:false };
+        btnUp.onmousedown = ()=>moveDir.up=true;
+        btnDown.onmousedown = ()=>moveDir.down=true;
+        btnLeft.onmousedown = ()=>moveDir.left=true;
+        btnRight.onmousedown = ()=>moveDir.right=true;
+        document.addEventListener('mouseup', ()=>{
+            moveDir = { up:false, down:false, left:false, right:false }
+        })
+
+        function shootBullet(){
+            if(!game.running) return;
+            const bullet = document.createElement('img');
+            bullet.src = '游戏/技能1.png'; // 路径替换
+            bullet.className = 'bullet';
+            const pLeft = game.playerX + 110;
+            const pBulletY = game.playerY + 60;
+            bullet.style.left = pLeft + 'px';
+            bullet.style.bottom = pBulletY + 'px';
+            gameBox.appendChild(bullet);
+            game.bulletArr.push({ dom:bullet, x:pLeft, y:pBulletY, speed:15 });
+        }
+        btnAtk.addEventListener('click', shootBullet);
+
+        function createMonster(){
+            if(!game.running) return;
+            const mType = Math.random()>0.5 ? 'm1' : 'm2';
+            const monster = document.createElement('img');
+            // 怪物图片路径替换
+            monster.src = mType==='m1' ? '游戏/怪兽1.png' : '游戏/怪兽2.png';
+            monster.className = 'monster ' + mType;
+            const mHeight = mType === 'm1' ? 130 : 110;
+            // 怪物最大bottom值：总高960 - 顶部围栏高度 - 怪物自身高度，保证不顶建筑
+            const maxMonsterBottom = 960 - game.topBuildingLine - mHeight;
+            // 随机区间：雪地底线 ~ 围栏下沿
+            const randBottom = Math.floor(Math.random() * (maxMonsterBottom - game.snowBottomLine) + game.snowBottomLine);
+            const randSpeed = Math.floor(Math.random()*4 + 3);
+            monster.style.right = '-160px';
+            monster.style.bottom = randBottom + 'px';
+            gameBox.appendChild(monster);
+            game.monsterArr.push({
+                dom:monster,
+                type:mType,
+                x:1707,
+                y:randBottom,
+                speed:randSpeed
+            })
+        }
+
+        function startGameLoop(){
+            game.monsterTimer = setInterval(createMonster, 1200);
+            function frameUpdate(){
+                if(!game.running) return;
+                // 人物上下边界：上不超建筑、下不埋雪地
+                const playerMaxY = 960 - game.topBuildingLine - 160;
+                if(moveDir.up && game.playerY < playerMaxY) game.playerY += game.playerSpeed;
+                if(moveDir.down && game.playerY > game.snowBottomLine) game.playerY -= game.playerSpeed;
+                if(moveDir.left && game.playerX > 0) game.playerX -= game.playerSpeed;
+                if(moveDir.right && game.playerX < 1550) game.playerX += game.playerSpeed;
+                player.style.left = game.playerX + 'px';
+                player.style.bottom = game.playerY + 'px';
+
+                // 更新子弹
+                for(let i=game.bulletArr.length-1; i>=0; i--){
+                    const b = game.bulletArr[i];
+                    b.x += b.speed;
+                    b.dom.style.left = b.x + 'px';
+                    if(b.x > 1707){
+                        b.dom.remove();
+                        game.bulletArr.splice(i,1);
+                    }
+                }
+
+                // 怪物更新+碰撞
+                for(let mIdx=game.monsterArr.length-1; mIdx>=0; mIdx--){
+                    const m = game.monsterArr[mIdx];
+                    m.x -= m.speed;
+                    m.dom.style.left = m.x + 'px';
+                    const mW = m.type==='m1'?160:140;
+                    const mH = m.type==='m1'?130:110;
+                    const pW = 110, pH = 160;
+                    const pX = game.playerX, pY = game.playerY;
+
+                    // 人物碰怪物扣血
+                    if(checkCollision(pX,pY,pW,pH, m.x,m.y,mW,mH)){
+                        game.hp -= 10;
+                        updateHPUI();
+                        m.dom.remove();
+                        game.monsterArr.splice(mIdx,1);
+                        if(game.hp <= 0){
+                            gameOver();
+                            return;
+                        }
+                        continue;
+                    }
+
+                    // 子弹击杀怪物加分
+                    for(let bIdx=game.bulletArr.length-1; bIdx>=0; bIdx--){
+                        const b = game.bulletArr[bIdx];
+                        const bW=140, bH=32;
+                        if(checkCollision(b.x,b.y,bW,bH, m.x,m.y,mW,mH)){
+                            b.dom.remove();
+                            game.bulletArr.splice(bIdx,1);
+                            m.dom.remove();
+                            game.monsterArr.splice(mIdx,1);
+                            game.score += 20;
+                            game.killCount += 1;
+                            scoreNum.innerText = game.score;
+                            killNum.innerText = game.killCount;
+                            break;
+                        }
+                    }
+
+                    // 怪物飞出左边界销毁
+                    if(m.x < -200){
+                        m.dom.remove();
+                        game.monsterArr.splice(mIdx,1);
+                    }
+                }
+                game.frameTimer = requestAnimationFrame(frameUpdate);
+            }
+            frameUpdate();
+        }
+
+        // 矩形碰撞检测
+        function checkCollision(x1,y1,w1,h1, x2,y2,w2,h2){
+            const left1 = x1, right1 = x1+w1;
+            const bottom1 = y1, top1 = y1+h1;
+            const left2 = x2, right2 = x2+w2;
+            const bottom2 = y2, top2 = y2+h2;
+            return !(right1 < left2 || left1 > right2 || top1 < bottom2 || bottom1 > top2);
+        }
+
+        // 更新血条UI
+        function updateHPUI(){
+            game.hp = Math.max(0, game.hp);
+            hpNum.innerText = game.hp;
+            const barWidth = (game.hp / 100) * 320;
+            hpFill.style.width = barWidth + 'px';
+        }
+
+        // 血量归零跳转结束页
+        function gameOver(){
+            game.running = false;
+            clearInterval(game.monsterTimer);
+            cancelAnimationFrame(game.frameTimer);
+            location.href = 'end.html';
+        }
+    </script>
+</body>
+</html>
